@@ -1,0 +1,4 @@
+name = "viet-long-thiet-ke-xay-dung"
+pages_build_output_dir = "dist"
+pages_build_command = "npm run build"
+compatibility_date = "2024-01-27"
