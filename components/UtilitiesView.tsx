@@ -66,13 +66,13 @@ export const UtilitiesView: React.FC<any> = (props) => {
     const [activeUtility, setActiveUtility] = useState<Utility | null>(null);
 
     const utilities: { id: Utility; icon: string; }[] = [
-        { id: 'moodboard', icon: 'clipboard' },
-        { id: 'lighting', icon: 'sparkles' },
-        { id: 'virtualTour', icon: 'globe' },
-        { id: 'videoPrompt', icon: 'video-camera' },
-        { id: 'extendView', icon: 'arrows-pointing-out' },
-        { id: 'changeStyle', icon: 'cpu-chip' },
-        { id: 'upscale', icon: 'sparkles' },
+        // { id: 'moodboard', icon: 'clipboard' },
+        // { id: 'lighting', icon: 'sparkles' },
+        // { id: 'virtualTour', icon: 'globe' },
+        // { id: 'videoPrompt', icon: 'video-camera' },
+        // { id: 'extendView', icon: 'arrows-pointing-out' },
+        // { id: 'changeStyle', icon: 'cpu-chip' },
+        // { id: 'upscale', icon: 'sparkles' },
     ];
 
     if (activeUtility) {
