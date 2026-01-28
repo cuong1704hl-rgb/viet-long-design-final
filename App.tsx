@@ -463,11 +463,11 @@ export default function App() {
           generatedPrompts: null,
         });
       } else {
-        alert(t('alertGenerationFailed'));
+        alert(`${t('alertGenerationFailed')}\nDetails: No images were generated.`);
       }
     } catch (error) {
       console.error("Lighting generation failed:", error);
-      alert(t('alertGenerationFailed'));
+      alert(`${t('alertGenerationFailed')}\nDetails: ${error.message || error}`);
     } finally {
       setIsLoading(false);
       setLoadingMessage('');
@@ -551,9 +551,9 @@ export default function App() {
     try {
       const result = await generateStyleChangePrompt(changeStyleSourceImage, changeStyleUserPrompt, language);
       setChangeStyleGeneratedPrompt(result);
-    } catch (error) {
-      console.error("Style prompt generation failed:", error);
-      alert(t('alertGenerationFailed'));
+    } catch (error: any) {
+      console.error("Magic prompt generation failed:", error);
+      alert(`${t('alertGenerationFailed')}\nDetails: ${error.message || error}`);
     } finally {
       setIsLoading(false);
       setLoadingMessage('');
