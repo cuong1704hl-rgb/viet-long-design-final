@@ -96,54 +96,65 @@ export const generateImages = async (
       return []; // Return empty array on failure
     }
   } else {
-    // CASE 2: Image-to-Image / Multi-modal generation (source image is present). Use Gemini model.
+    // CASE 2: Image-to-Image / Multi-modal generation (source image is present).
+    // Strategy: "Describe then Generate".
+    // 1. Use Gemini 1.5 Flash to understand the source image + prompt and write a detailed description.
+    // 2. Use Imagen 3 to generate a NEW image based on that description.
+
     const results: (string | null)[] = [];
+    console.log("[GeminiService] Mode: Image-to-Image (Describe -> Imagen)"); // DEBUG
+
     for (let i = 0; i < count; i++) {
-      let engineeredPrompt = prompt;
-      const parts: any[] = [];
-
-      // Always add the source image first
-      parts.push({
-        inlineData: {
-          data: sourceImage.base64,
-          mimeType: sourceImage.mimeType,
-        },
-      });
-
-      // Add reference image if provided
-      if (referenceImage) {
-        parts.push({
-          inlineData: {
-            data: referenceImage.base64,
-            mimeType: referenceImage.mimeType,
-          },
-        });
-        // The prompt for using source + reference
-        const template = (negativePrompt && negativePrompt.trim() !== '')
-          ? translations[lang].engineeredPrompts.generateWithReferenceNegative
-          : translations[lang].engineeredPrompts.generateWithReference;
-        engineeredPrompt = formatPrompt(template, prompt, negativePrompt);
-      } else {
-        const template = (negativePrompt && negativePrompt.trim() !== '')
-          ? translations[lang].engineeredPrompts.generateWithoutReferenceNegative
-          : translations[lang].engineeredPrompts.generateWithoutReference;
-        engineeredPrompt = formatPrompt(template, prompt, negativePrompt);
-      }
-
-      parts.push({ text: engineeredPrompt });
-
+      // Step 1: Describe
       try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-1.5-flash',
-          contents: { parts },
-          config: {
-            responseModalities: [Modality.IMAGE],
+        console.log(`[GeminiService] Step 1: Describing image for iteration ${i + 1}...`);
+        const descriptionParts: any[] = [
+          {
+            inlineData: {
+              data: sourceImage.base64,
+              mimeType: sourceImage.mimeType,
+            },
           },
+          { text: `Analyze this image and the user's requirement: "${prompt}". \n\nWrite a highly detailed, descriptive text prompt (in English) that can be used by an AI image generator (like Imagen) to generate a NEW image. \nThe new image should preserve the composition and style of the original image but strictly follow the user's requirements.\nProvide ONLY the prompt text, no explanations.` }
+        ];
+
+        const descriptionResponse = await ai.models.generateContent({
+          model: 'gemini-1.5-flash',
+          contents: { parts: descriptionParts },
         });
-        results.push(extractBase64Image(response));
+
+        const enhancedPrompt = descriptionResponse.text.trim();
+        console.log(`[GeminiService] Step 1 Complete. Enhanced Prompt: ${enhancedPrompt.substring(0, 50)}...`);
+
+        // Step 2: Generate with Imagen 3
+        console.log(`[GeminiService] Step 2: Generating image with Imagen 3...`);
+        let finalImagePrompt = enhancedPrompt;
+        if (negativePrompt && negativePrompt.trim() !== '') {
+          finalImagePrompt = `${finalImagePrompt}. Do not include: ${negativePrompt}`;
+        }
+
+        const config: any = {
+          numberOfImages: 1,
+          outputMimeType: 'image/png',
+          aspectRatio: aspectRatio,
+        };
+
+        const imageResponse = await ai.models.generateImages({
+          model: 'imagen-3.0-generate-001',
+          prompt: finalImagePrompt,
+          config,
+        });
+
+        if (imageResponse.generatedImages && imageResponse.generatedImages.length > 0) {
+          const base64Image = `data:image/png;base64,${imageResponse.generatedImages[0].image.imageBytes}`;
+          results.push(base64Image);
+          console.log(`[GeminiService] Step 2 Success for iteration ${i + 1}`);
+        } else {
+          console.error(`[GeminiService] Step 2 Failed: No images returned.`);
+        }
+
       } catch (error) {
-        console.error(`Failed to generate image ${i + 1}/${count}:`, error);
-        // Continue to the next iteration even if one fails
+        console.error(`[GeminiService] Failed iteration ${i + 1}/${count}:`, error);
       }
     }
 
