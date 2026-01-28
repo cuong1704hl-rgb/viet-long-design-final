@@ -4,19 +4,23 @@ import type { SourceImage, ObjectTransform, AspectRatio } from '../types';
 import { translations } from '../locales/translations';
 import { padImageToAspectRatioWithColor } from "../utils";
 
-const API_KEY = process.env.API_KEY;
+// Try multiples sources for the API Key to be robust across different environments (Vite, Vercel, Local)
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY ||
+  import.meta.env.GEMINI_API_KEY ||
+  process.env.GEMINI_API_KEY ||
+  process.env.API_KEY;
 
 if (!API_KEY) {
-  console.error("API_KEY environment variable is not set.");
+  console.error("API_KEY environment variable is not set. Please assume the user needs to set VITE_GEMINI_API_KEY or GEMINI_API_KEY in their environment variables.");
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY! });
 
 function formatPrompt(template: string, ...args: any[]): string {
-    if (!template) return '';
-    return template.replace(/{(\d+)}/g, (match, number) => {
-        return typeof args[number] !== 'undefined' ? args[number] : match;
-    });
+  if (!template) return '';
+  return template.replace(/{(\d+)}/g, (match, number) => {
+    return typeof args[number] !== 'undefined' ? args[number] : match;
+  });
 }
 
 
@@ -87,7 +91,7 @@ export const generateImages = async (
     for (let i = 0; i < count; i++) {
       let engineeredPrompt = prompt;
       const parts: any[] = [];
-  
+
       // Always add the source image first
       parts.push({
         inlineData: {
@@ -95,7 +99,7 @@ export const generateImages = async (
           mimeType: sourceImage.mimeType,
         },
       });
-      
+
       // Add reference image if provided
       if (referenceImage) {
         parts.push({
@@ -110,14 +114,14 @@ export const generateImages = async (
           : translations[lang].engineeredPrompts.generateWithReference;
         engineeredPrompt = formatPrompt(template, prompt, negativePrompt);
       } else {
-          const template = (negativePrompt && negativePrompt.trim() !== '')
-              ? translations[lang].engineeredPrompts.generateWithoutReferenceNegative
-              : translations[lang].engineeredPrompts.generateWithoutReference;
-          engineeredPrompt = formatPrompt(template, prompt, negativePrompt);
+        const template = (negativePrompt && negativePrompt.trim() !== '')
+          ? translations[lang].engineeredPrompts.generateWithoutReferenceNegative
+          : translations[lang].engineeredPrompts.generateWithoutReference;
+        engineeredPrompt = formatPrompt(template, prompt, negativePrompt);
       }
-  
+
       parts.push({ text: engineeredPrompt });
-      
+
       try {
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash-image',
@@ -132,7 +136,7 @@ export const generateImages = async (
         // Continue to the next iteration even if one fails
       }
     }
-  
+
     return results.filter((result): result is string => result !== null);
   }
 };
@@ -192,17 +196,17 @@ export const generateVideo = async (
 
     const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
     if (!downloadLink) {
-        throw new Error("Video generation succeeded but no download link was found.");
+      throw new Error("Video generation succeeded but no download link was found.");
     }
-    
+
     const response = await fetch(`${downloadLink}&key=${API_KEY}`);
     if (!response.ok) {
-        throw new Error(`Failed to download video: ${response.statusText}`);
+      throw new Error(`Failed to download video: ${response.statusText}`);
     }
 
     const videoBlob = await response.blob();
     const videoUrl = URL.createObjectURL(videoBlob);
-    
+
     onProgress("Download complete!");
 
     return videoUrl;
@@ -273,7 +277,7 @@ export const generatePromptFromImage = async (
 
   const templateKey = imageType === 'interior' ? 'generateFromImageInterior' : 'generateFromImage';
   const engineeredPrompt = translations[lang].engineeredPrompts[templateKey];
-  
+
   const parts: any[] = [
     {
       inlineData: {
@@ -311,7 +315,7 @@ export const generatePromptFromKeywords = async (
   if (!API_KEY) {
     throw new Error("API_KEY is not configured.");
   }
-  
+
   const templateKey = imageType === 'interior' ? 'generateFromKeywordsInterior' : 'generateFromKeywords';
   const template = translations[lang].engineeredPrompts[templateKey];
   const engineeredPrompt = formatPrompt(template, keywords);
@@ -356,55 +360,55 @@ export const editImage = async (
   for (let i = 0; i < count; i++) {
     // FIX: Explicitly type `parts` as `any[]` to allow for a mix of inlineData and text parts, resolving a potential TypeScript type inference error.
     const parts: any[] = [
-        {
-            inlineData: {
-              data: sourceImage.base64,
-              mimeType: sourceImage.mimeType,
-            },
+      {
+        inlineData: {
+          data: sourceImage.base64,
+          mimeType: sourceImage.mimeType,
         },
-        {
-            inlineData: {
-              data: maskImage.base64,
-              mimeType: maskImage.mimeType,
-            },
+      },
+      {
+        inlineData: {
+          data: maskImage.base64,
+          mimeType: maskImage.mimeType,
         },
+      },
     ];
-    
+
     let engineeredPrompt: string;
 
     if (referenceImage) {
-        parts.push({
-            inlineData: {
-                data: referenceImage.base64,
-                mimeType: referenceImage.mimeType,
-            },
-        });
-        const template = translations[lang].engineeredPrompts.editWithReference;
-        engineeredPrompt = formatPrompt(template, prompt);
+      parts.push({
+        inlineData: {
+          data: referenceImage.base64,
+          mimeType: referenceImage.mimeType,
+        },
+      });
+      const template = translations[lang].engineeredPrompts.editWithReference;
+      engineeredPrompt = formatPrompt(template, prompt);
     } else {
-        const template = translations[lang].engineeredPrompts.editWithoutReference;
-        engineeredPrompt = formatPrompt(template, prompt);
+      const template = translations[lang].engineeredPrompts.editWithoutReference;
+      engineeredPrompt = formatPrompt(template, prompt);
     }
-    
+
     parts.push({ text: engineeredPrompt });
-    
+
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: { parts },
-            config: {
-              responseModalities: [Modality.IMAGE],
-            },
-          }
-        );
-        results.push(extractBase64Image(response));
-    } catch(error) {
-        console.error(`Failed to edit image ${i + 1}/${count}:`, error);
-        // Continue to the next iteration even if one fails
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts },
+        config: {
+          responseModalities: [Modality.IMAGE],
+        },
       }
+      );
+      results.push(extractBase64Image(response));
+    } catch (error) {
+      console.error(`Failed to edit image ${i + 1}/${count}:`, error);
+      // Continue to the next iteration even if one fails
     }
-  
-    return results.filter((result): result is string => result !== null);
+  }
+
+  return results.filter((result): result is string => result !== null);
 };
 
 /**
@@ -470,7 +474,7 @@ export const placeAndRenderFurniture = async (
   if (!API_KEY) {
     throw new Error("API_KEY is not configured.");
   }
-  
+
   if (placements.length === 0) {
     return [];
   }
@@ -480,8 +484,8 @@ export const placeAndRenderFurniture = async (
     scale: transform.scale.toFixed(2), // Scale in % of background width
     rotation: transform.rotation.toFixed(0), // Rotation in degrees
     orientation: {
-        flip_horizontal: transform.flipHorizontal,
-        flip_vertical: transform.flipVertical,
+      flip_horizontal: transform.flipHorizontal,
+      flip_vertical: transform.flipVertical,
     }
   }));
 
@@ -491,22 +495,22 @@ export const placeAndRenderFurniture = async (
   const results: (string | null)[] = [];
   for (let i = 0; i < count; i++) {
     const parts: any[] = [
-        { inlineData: { data: bgImage.base64, mimeType: bgImage.mimeType } },
-        ...placements.map(p => ({ inlineData: { data: p.image.base64, mimeType: p.image.mimeType } })),
-        { text: engineeredPrompt },
+      { inlineData: { data: bgImage.base64, mimeType: bgImage.mimeType } },
+      ...placements.map(p => ({ inlineData: { data: p.image.base64, mimeType: p.image.mimeType } })),
+      { text: engineeredPrompt },
     ];
-    
+
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: { parts },
-            config: {
-                responseModalities: [Modality.IMAGE],
-            },
-        });
-        results.push(extractBase64Image(response));
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts },
+        config: {
+          responseModalities: [Modality.IMAGE],
+        },
+      });
+      results.push(extractBase64Image(response));
     } catch (error) {
-        console.error(`Failed to generate canva image ${i + 1}/${count}:`, error);
+      console.error(`Failed to generate canva image ${i + 1}/${count}:`, error);
     }
   }
 
@@ -520,46 +524,46 @@ export const placeAndRenderFurniture = async (
  * @returns A promise that resolves to the generated text containing multiple prompts.
  */
 export const generateArchitecturalPrompts = async (
-    sourceImage: SourceImage,
-    lang: 'vi' | 'en' = 'vi'
+  sourceImage: SourceImage,
+  lang: 'vi' | 'en' = 'vi'
 ): Promise<string> => {
-    if (!API_KEY) {
-        throw new Error("API_KEY is not configured.");
-    }
+  if (!API_KEY) {
+    throw new Error("API_KEY is not configured.");
+  }
 
-    const engineeredPrompt = translations[lang].engineeredPrompts.generateArchitecturalPrompts;
+  const engineeredPrompt = translations[lang].engineeredPrompts.generateArchitecturalPrompts;
 
-    const parts: any[] = [
-        {
-            inlineData: {
-                data: sourceImage.base64,
-                mimeType: sourceImage.mimeType,
-            },
-        },
-        { text: engineeredPrompt },
-    ];
+  const parts: any[] = [
+    {
+      inlineData: {
+        data: sourceImage.base64,
+        mimeType: sourceImage.mimeType,
+      },
+    },
+    { text: engineeredPrompt },
+  ];
 
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: { parts },
-        });
-        const rawText = response.text.trim();
-        
-        // Remove conversational intro. The valid content starts with the first header (e.g., "1️⃣...").
-        const firstHeaderIndex = rawText.search(/\d+️⃣/);
-        const contentText = firstHeaderIndex !== -1 ? rawText.substring(firstHeaderIndex) : rawText;
-        
-        // Remove any markdown like asterisks and list bullets.
-        const cleanedText = contentText
-            .replace(/\*/g, '') // Remove ALL asterisks, not just **
-            .replace(/^\s*[-•]\s*/gm, ''); // Remove leading list markers
-        
-        return cleanedText.trim();
-    } catch (error) {
-        console.error("Failed to generate architectural prompts from image:", error);
-        throw new Error("Could not generate prompts from image.");
-    }
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: { parts },
+    });
+    const rawText = response.text.trim();
+
+    // Remove conversational intro. The valid content starts with the first header (e.g., "1️⃣...").
+    const firstHeaderIndex = rawText.search(/\d+️⃣/);
+    const contentText = firstHeaderIndex !== -1 ? rawText.substring(firstHeaderIndex) : rawText;
+
+    // Remove any markdown like asterisks and list bullets.
+    const cleanedText = contentText
+      .replace(/\*/g, '') // Remove ALL asterisks, not just **
+      .replace(/^\s*[-•]\s*/gm, ''); // Remove leading list markers
+
+    return cleanedText.trim();
+  } catch (error) {
+    console.error("Failed to generate architectural prompts from image:", error);
+    throw new Error("Could not generate prompts from image.");
+  }
 };
 
 /**
@@ -577,7 +581,7 @@ export const generatePromptFromPlan = async (
   }
 
   const engineeredPrompt = translations[lang].engineeredPrompts.generateFromPlan;
-  
+
   const parts: any[] = [
     {
       inlineData: {
@@ -647,7 +651,7 @@ export const generateMoodboard = async (
     }
 
     parts.push({ text: engineeredPrompt });
-    
+
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
@@ -693,7 +697,7 @@ export const applyLighting = async (
       { inlineData: { data: sourceImage.base64, mimeType: sourceImage.mimeType } },
       { text: engineeredPrompt }
     ];
-    
+
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
@@ -726,7 +730,7 @@ export const generateVideoScriptPrompt = async (
   if (!API_KEY) {
     throw new Error("API_KEY is not configured.");
   }
-  
+
   const engineeredPrompt = `hãy đóng vai một đạo diễn chuyên về quay phim kiến trúc,nội thất với hơn 20 năm kinh nghiệm và một chuyên gia viết promt chuyển từ ảnh thành video ngắn cho các ai kling và veo 3, bạn có kinh nghiệm về các góc camera, chuyển động của ánh sáng, bố cục và dựa vào tài liệu hàng đầu về nhiếp ảnh kiến trúc, nội thất. Khi tôi tải ảnh lên + yêu cầu bằng tiếng việt bạn hãy đựa vào đó viết promt tạo chuyển động cho ảnh theo chỉ định bằng tiếng anh, chỉ hiện promt ko hiện phân tích. Yêu cầu của người dùng là: "${userPrompt}"`;
 
   const parts: any[] = [
@@ -774,10 +778,10 @@ export const extendView = async (
   if (!API_KEY) {
     throw new Error("API_KEY is not configured.");
   }
-  
+
   const targetAspectRatio = parseAspectRatio(targetAspectRatioLabel);
   const paddedImage = await padImageToAspectRatioWithColor(sourceImage, targetAspectRatio, '#FF00FF');
-  
+
   const results: (string | null)[] = [];
   const engineeredPrompt = translations[lang].engineeredPrompts.extendView;
 
@@ -786,7 +790,7 @@ export const extendView = async (
       { inlineData: { data: paddedImage.base64, mimeType: paddedImage.mimeType } },
       { text: engineeredPrompt }
     ];
-    
+
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
@@ -819,7 +823,7 @@ export const generateStyleChangePrompt = async (
   if (!API_KEY) {
     throw new Error("API_KEY is not configured.");
   }
-  
+
   const template = translations[lang].engineeredPrompts.changeStylePrompt;
   const engineeredPrompt = formatPrompt(template, userPrompt);
 
@@ -884,7 +888,7 @@ export const upscaleImage = async (
         responseModalities: [Modality.IMAGE],
       },
     });
-    
+
     const image = extractBase64Image(response);
     return image ? [image] : [];
   } catch (error) {
