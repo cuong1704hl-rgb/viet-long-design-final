@@ -3,7 +3,7 @@ import type { SourceImage, HistoryItem, ActiveTab, AspectRatio, EditSubMode, Obj
 import { generateImages, editImage, generateVideo, mergeImages, generatePromptFromImage, placeAndRenderFurniture, generateArchitecturalPrompts, generatePromptFromPlan, generateMoodboard, applyLighting, generateVideoScriptPrompt, extendView, generateStyleChangePrompt, upscaleImage } from './services/geminiService';
 import { sourceImageToDataUrl, copyToClipboard, dataUrlToSourceImage } from './utils';
 import { useHistory } from './hooks/useHistory';
-import { useLanguage } from './providers/LocaleContext';
+import { useLanguage } from '@/providers/LocaleContext';
 
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { Header } from './components/Header';
