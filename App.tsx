@@ -1018,7 +1018,7 @@ export default function App() {
               lassoEditorRef={lassoEditorRef}
               brushEditorRef={brushEditorRef}
               setMaskImage={setMaskImage}
-              handleGeneration={handleGeneration}
+              handleGeneration={handleImageGeneration}
               // Canva props
               canvaObjects={canvaObjects}
               setCanvaObjects={setCanvaObjects}
