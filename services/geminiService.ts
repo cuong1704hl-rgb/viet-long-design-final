@@ -12,6 +12,10 @@ const API_KEY = import.meta.env.VITE_GEMINI_API_KEY ||
 
 if (!API_KEY) {
   console.error("API_KEY environment variable is not set. Please assume the user needs to set VITE_GEMINI_API_KEY or GEMINI_API_KEY in their environment variables.");
+} else if (API_KEY.includes('PLACEHOLDER')) {
+  console.error("API_KEY is currently set to a placeholder value. Please update it in your Vercel settings.");
+} else {
+  console.log("Gemini Service: API Key found (starts with: " + API_KEY.substring(0, 4) + "...)");
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY! });
@@ -621,7 +625,10 @@ export const generateMoodboard = async (
   lang: 'vi' | 'en' = 'vi'
 ): Promise<string[]> => {
   if (!API_KEY) {
-    throw new Error("API_KEY is not configured.");
+    throw new Error("API_KEY is not configured due to missing env var.");
+  }
+  if (API_KEY.includes('PLACEHOLDER')) {
+    throw new Error("API_KEY is still using the PLACEHOLDER value. Please update it in Vercel Settings.");
   }
 
   const results: (string | null)[] = [];

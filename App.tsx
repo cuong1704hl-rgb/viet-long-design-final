@@ -428,9 +428,9 @@ export default function App() {
       } else {
         alert(t('alertGenerationFailed'));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Moodboard generation failed:", error);
-      alert(t('alertGenerationFailed'));
+      alert(`${t('alertGenerationFailed')}\nDetails: ${error.message || error}`);
     } finally {
       setIsLoading(false);
       setLoadingMessage('');
