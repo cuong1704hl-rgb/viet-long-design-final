@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Icon } from './icons';
 import { useImageZoom } from '../hooks/useImageZoom';
-import { useLanguage } from '../providers/LocaleContext';
+import { useLanguage } from '../providers/localeContext';
 
 interface FullscreenViewerProps {
     imageUrl: string;

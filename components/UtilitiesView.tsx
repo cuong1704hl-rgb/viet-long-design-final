@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Utility } from '../types';
-import { useLanguage } from '../providers/LocaleContext';
+import { useLanguage } from '../providers/localeContext';
 import { Icon } from './icons';
 import { MoodboardCreator } from './MoodboardCreator';
 import { LightingCreator } from './LightingCreator';

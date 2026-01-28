@@ -5,7 +5,7 @@ import { ImageEditor } from './ImageEditor';
 import { BrushEditor } from './BrushEditor';
 import { AreaSelector } from './ArrowEditor';
 import { InteractiveCanvas } from './InteractiveCanvas';
-import { useLanguage } from '../providers/LocaleContext';
+import { useLanguage } from '../providers/localeContext';
 
 interface GalleryPanelProps {
     isLoading: boolean;

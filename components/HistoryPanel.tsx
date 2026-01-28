@@ -2,7 +2,7 @@ import React from 'react';
 import type { HistoryItem } from '../types';
 import { Icon } from './icons';
 import { sourceImageToDataUrl } from '../utils';
-import { useLanguage } from '../providers/LocaleContext';
+import { useLanguage } from '../providers/localeContext';
 
 interface HistoryPanelProps {
     history: HistoryItem[];

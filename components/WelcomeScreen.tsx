@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '../providers/LocaleContext';
+import { useLanguage } from '../providers/localeContext';
 import { Icon } from './icons';
 
 export const WelcomeScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {

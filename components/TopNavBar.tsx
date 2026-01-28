@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ActiveTab } from '../types';
-import { useLanguage } from '../providers/LocaleContext';
+import { useLanguage } from '../providers/localeContext';
 
 const Tab: React.FC<{ label: string; active: boolean; onClick: () => void; disabled?: boolean }> = ({ label, active, onClick, disabled }) => (
   <button

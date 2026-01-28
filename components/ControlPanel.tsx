@@ -7,7 +7,7 @@ import { sourceImageToDataUrl, padImageToAspectRatio } from '../utils';
 import { ASPECT_RATIO_OPTIONS } from '../constants';
 import { ImageEditor } from './ImageEditor';
 import { BrushEditor } from './BrushEditor';
-import { useLanguage } from '../providers/LocaleContext';
+import { useLanguage } from '../providers/localeContext';
 import { translations } from '../locales/translations';
 
 const PromptInput: React.FC<{ prompt: string, setPrompt: React.Dispatch<React.SetStateAction<string>>, placeholder: string }> = ({ prompt, setPrompt, placeholder }) => {

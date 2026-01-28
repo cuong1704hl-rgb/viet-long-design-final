@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import type { SourceImage, AspectRatio } from '../types';
-import { useLanguage } from '../providers/LocaleContext';
+import { useLanguage } from '../providers/localeContext';
 import { Icon } from './icons';
 import { ImageDropzone } from './ImageDropzone';
 import { sourceImageToDataUrl } from '../utils';
