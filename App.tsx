@@ -294,7 +294,9 @@ export default function App() {
     }
   }, [sourceImage, imageCount, activeTab, addHistoryItem, t, language]);
 
-  const handleGeneration = useCallback(async () => {
+  const handleImageGeneration = useCallback(async () => {
+    alert("1. Bắt đầu xử lý (Starting)..."); // DEBUG
+    if (activeTab === 'create' && !prompt) return alert(t('alertEnterPrompt'));
     if (!sourceImage && activeTab !== 'create' && activeTab !== 'prompt') return alert(t('alertUploadSource'));
     if (activeTab === 'edit') {
       if (editSubMode === 'inpaint' && !maskImage) return alert(t('alertDrawMask'));
@@ -394,7 +396,7 @@ export default function App() {
       }
     } catch (error: any) {
       console.error("Generation failed:", error);
-      alert(`${t('alertGenerationFailed')}\nDetails: ${error.message || error}`);
+      alert(`LỖI (ERROR): ${error.message || error}`);
     } finally {
       setIsLoading(false);
       setLoadingMessage('');

@@ -69,9 +69,12 @@ export const generateImages = async (
     throw new Error("API_KEY is still using the PLACEHOLDER value. Please update it in Vercel Settings.");
   }
 
+  console.log(`[GeminiService] generateImages called. Count: ${count}, Prompt: ${prompt.substring(0, 50)}...`); // DEBUG
+
   // CASE 1: Text-to-Image generation (no source image). Use Imagen 4 model.
   if (!sourceImage) {
     try {
+      console.log("[GeminiService] Mode: Text-to-Image (Imagen 3)"); // DEBUG
       let finalPrompt = prompt;
       if (negativePrompt && negativePrompt.trim() !== '') {
         // Embed the negative prompt into the main prompt as the dedicated parameter is not supported for this call.
