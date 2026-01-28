@@ -63,7 +63,10 @@ export const generateImages = async (
   negativePrompt?: string
 ): Promise<string[]> => {
   if (!API_KEY) {
-    throw new Error("API_KEY is not configured.");
+    throw new Error("API_KEY is not configured due to missing env var.");
+  }
+  if (API_KEY.includes('PLACEHOLDER')) {
+    throw new Error("API_KEY is still using the PLACEHOLDER value. Please update it in Vercel Settings.");
   }
 
   // CASE 1: Text-to-Image generation (no source image). Use Imagen 4 model.

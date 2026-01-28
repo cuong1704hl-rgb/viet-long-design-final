@@ -394,7 +394,7 @@ export default function App() {
       }
     } catch (error: any) {
       console.error("Generation failed:", error);
-      alert(t('alertGenerationFailed'));
+      alert(`${t('alertGenerationFailed')}\nDetails: ${error.message || error}`);
     } finally {
       setIsLoading(false);
       setLoadingMessage('');
