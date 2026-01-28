@@ -86,7 +86,7 @@ export const generateImages = async (
         aspectRatio: aspectRatio, // Use the passed aspect ratio
       };
       const response = await ai.models.generateImages({
-        model: 'imagen-3.0-generate-001',
+        model: 'imagen-4.0-generate-001',
         prompt: finalPrompt,
         config,
       });
@@ -140,7 +140,7 @@ export const generateImages = async (
         };
 
         const imageResponse = await ai.models.generateImages({
-          model: 'imagen-3.0-generate-001',
+          model: 'imagen-4.0-generate-001',
           prompt: finalImagePrompt,
           config,
         });
