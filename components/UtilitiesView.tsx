@@ -112,4 +112,17 @@ export const UtilitiesView: React.FC<any> = (props) => {
 
     return (
         <div className="lg:col-span-12">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {utilities.map((item) => (
+                    <UtilityThumbnail
+                        key={item.id}
+                        icon={item.icon}
+                        title={t(`${item.id}Title` as any)}
+                        description={t(`${item.id}Desc` as any)}
+                        onClick={() => setActiveUtility(item.id)}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
