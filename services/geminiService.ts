@@ -71,29 +71,39 @@ export const generateImages = async (
 
   console.log(`[GeminiService] generateImages called. Count: ${count}, Prompt: ${prompt.substring(0, 50)}...`); // DEBUG
 
-  // CASE 1: Text-to-Image generation (no source image). Use Imagen 4 model.
+  // CASE 1: Text-to-Image generation (no source image). Use Gemini 2.5 Flash Image.
   if (!sourceImage) {
     try {
-      console.log("[GeminiService] Mode: Text-to-Image (Imagen 3)"); // DEBUG
+      console.log("[GeminiService] Mode: Text-to-Image (Gemini 2.5 Flash Image)"); // DEBUG
       let finalPrompt = prompt;
       if (negativePrompt && negativePrompt.trim() !== '') {
-        // Embed the negative prompt into the main prompt as the dedicated parameter is not supported for this call.
         finalPrompt = `${prompt}. Do not include: ${negativePrompt}`;
       }
-      const config: any = {
-        numberOfImages: count,
-        outputMimeType: 'image/png', // Using PNG for better quality
-        aspectRatio: aspectRatio, // Use the passed aspect ratio
-      };
-      const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: finalPrompt,
-        config,
-      });
-      return response.generatedImages.map(img => `data:image/png;base64,${img.image.imageBytes}`);
+
+      const results: (string | null)[] = [];
+      for (let i = 0; i < count; i++) {
+        console.log(`[GeminiService] Generating image ${i + 1}/${count}...`);
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: { parts: [{ text: finalPrompt }] },
+          config: {
+            responseModalities: [Modality.IMAGE],
+          },
+        });
+
+        const base64Image = extractBase64Image(response);
+        if (base64Image) {
+          results.push(base64Image);
+          console.log(`[GeminiService] Image ${i + 1} generated successfully`);
+        } else {
+          console.error(`[GeminiService] Failed to extract image ${i + 1}`);
+        }
+      }
+
+      return results.filter((result): result is string => result !== null);
     } catch (error) {
       console.error(`Failed to generate images from text prompt:`, error);
-      return []; // Return empty array on failure
+      return [];
     }
   } else {
     // CASE 2: Image-to-Image / Multi-modal generation (source image is present).
@@ -126,27 +136,34 @@ export const generateImages = async (
         const enhancedPrompt = descriptionResponse.text.trim();
         console.log(`[GeminiService] Step 1 Complete. Enhanced Prompt: ${enhancedPrompt.substring(0, 50)}...`);
 
-        // Step 2: Generate with Imagen 3
-        console.log(`[GeminiService] Step 2: Generating image with Imagen 3...`);
+        // Step 2: Generate with Gemini 2.5 Flash Image
+        console.log(`[GeminiService] Step 2: Generating image with Gemini 2.5 Flash Image...`);
         let finalImagePrompt = enhancedPrompt;
         if (negativePrompt && negativePrompt.trim() !== '') {
           finalImagePrompt = `${finalImagePrompt}. Do not include: ${negativePrompt}`;
         }
 
-        const config: any = {
-          numberOfImages: 1,
-          outputMimeType: 'image/png',
-          aspectRatio: aspectRatio,
-        };
+        // Include the source image in the generation for better context
+        const parts: any[] = [
+          {
+            inlineData: {
+              data: sourceImage.base64,
+              mimeType: sourceImage.mimeType,
+            },
+          },
+          { text: finalImagePrompt },
+        ];
 
-        const imageResponse = await ai.models.generateImages({
-          model: 'imagen-4.0-generate-001',
-          prompt: finalImagePrompt,
-          config,
+        const imageResponse = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: { parts },
+          config: {
+            responseModalities: [Modality.IMAGE],
+          },
         });
 
-        if (imageResponse.generatedImages && imageResponse.generatedImages.length > 0) {
-          const base64Image = `data:image/png;base64,${imageResponse.generatedImages[0].image.imageBytes}`;
+        const base64Image = extractBase64Image(imageResponse);
+        if (base64Image) {
           results.push(base64Image);
           console.log(`[GeminiService] Step 2 Success for iteration ${i + 1}`);
         } else {
